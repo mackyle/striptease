@@ -2494,7 +2494,7 @@ unsigned long nindirectsyms)
 		    else{ /* non-debug local symbol */
 			if(xflag == 0 && (Sflag || Xflag || tflag)){
 			    /*
-			     * No -x (strip all local), and either -S (strip
+			     * No -x (strip all local), and one of -S (strip
 			     * debug), -X (strip 'L' local), or -t (strip
 			     * local except non-'L' text) was given.
 			     */
