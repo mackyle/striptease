@@ -40,7 +40,7 @@ OSXNUVER := $(shell uname -r | cut -d. -f1)
 ifeq ($(DEBUG),0)
   $(shell mkdir -p build/Release/libstuff)
   DD=build/Release/
-  COPTS=-O3
+  COPTS=-Os
 else
   $(shell mkdir -p build/Debug/libstuff)
   DD=build/Debug/
