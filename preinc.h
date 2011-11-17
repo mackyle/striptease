@@ -28,4 +28,14 @@
 /* This is a hack to compile and build a 10.4 compatible version
  * without tons of warnings
  */
+#include <stdint.h>
 struct __darwin_i386_float_state;
+#define __DARWIN_UNIX03 1
+#define __uint32_t uint32_t
+#define __lr lr
+#define __pc pc
+#include "mach/arm/_structs.h"
+#undef __pc
+#undef __lr
+#undef __uint32_t
+#undef __DARWIN_UNIX03

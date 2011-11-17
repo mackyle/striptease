@@ -2710,8 +2710,8 @@ uint32_t nextrefsyms)
 		 * For x86_64 .o files we have run ld -r on them and are stuck
 		 * keeping all resulting symbols.
 		 */
-		else if(object->mh == NULL && 
-		   object->mh64->cputype == CPU_TYPE_X86_64 &&
+		else if(object->mh == NULL && (
+		   object->mh64->cputype == CPU_TYPE_X86_64) &&
 		   object->mh64->filetype == MH_OBJECT){
 		    if(n_strx != 0)
 			new_strsize += strlen(strings + n_strx) + 1;
