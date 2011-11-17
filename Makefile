@@ -61,18 +61,36 @@ LDOPTS += $(LDEXTRA)
 
 all : $(DD)tease
 
+.PHONY : tease strip
+
+tease : $(DD)tease
+
+strip : $(DD)strip
+
 LIBSTUFF_SRC := $(wildcard libstuff/*.c)
 
 TEASE_SRC = \
 	tease.c \
 	$(LIBSTUFF_SRC)
 
-OBJS = $(addprefix $(DD),$(TEASE_SRC:.c=.o))
+STRIP_SRC = \
+	strip.c \
+	$(LIBSTUFF_SRC)
+
+TEASE_OBJS = $(addprefix $(DD),$(TEASE_SRC:.c=.o))
+
+STRIP_OBJS = $(addprefix $(DD),$(STRIP_SRC:.c=.o))
 
 $(DD)%.o : %.c
 	$(CC) -Wall -c $(COPTS) $(CINC) -o $@ $<
 
-$(DD)tease : $(OBJS)
+$(DD)tease : $(TEASE_OBJS)
+	$(CC) -o $@ $(LDOPTS) $^
+ifneq ($(DEBUG),0)
+	dsymutil $@
+endif
+
+$(DD)strip : $(STRIP_OBJS)
 	$(CC) -o $@ $(LDOPTS) $^
 ifneq ($(DEBUG),0)
 	dsymutil $@
