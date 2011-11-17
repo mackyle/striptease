@@ -33,7 +33,10 @@ export DEBUG
 
 CC = gcc-4.0
 CINC = -Iinclude
-XSDK = $(shell xcode-select -print-path)/SDKs
+XSDK := $(shell xcode-select -print-path 2>/dev/null)/SDKs
+ifeq ($(XSDK),/SDKs)
+XSDK := /Developer/SDKs
+endif
 
 OSXNUVER := $(shell uname -r | cut -d. -f1)
 
@@ -49,7 +52,11 @@ else
 endif
 
 COPTS += -mmacosx-version-min=10.4
+ifeq ($(OSXNUVER),8)
+COPTS += -isysroot$(XSDK)/MacOSX10.4u.sdk
+else
 COPTS += -isysroot$(XSDK)/MacOSX10.5.sdk
+endif
 COPTS += -include preinc.h
 ifneq ($(OSXNUVER),8)
 COPTS += -arch x86_64
@@ -61,9 +68,12 @@ LDOPTS += -mmacosx-version-min=10.4
 ifneq ($(OSXNUVER),8)
 LDOPTS += -Xarch_x86_64 -mmacosx-version-min=10.5
 endif
-# The 10.4u SDK can be used, but do not require it
-#LDOPTS += -isysroot$(XSDK)/MacOSX10.4u.sdk
+# The 10.4u SDK can be used, but do not require it except on 10.4.x
+ifeq ($(OSXNUVER),8)
+LDOPTS += -isysroot$(XSDK)/MacOSX10.4u.sdk
+else
 LDOPTS += -isysroot$(XSDK)/MacOSX10.5.sdk
+endif
 ifneq ($(OSXNUVER),8)
 LDOPTS += -arch x86_64
 endif
