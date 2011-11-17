@@ -43,4 +43,4 @@ Use "make clean" to remove the build directory and built executables.
 
 Note that when building on 10.6 or 10.7, the MacOSX10.5.sdk must be present.
 Also note that compile warnings (and link warnings when building on 10.4)
-should be ignored -- the cctools-809 sources have some issues.
+should be ignored -- the cctools-809 sources have some issues with warnings.
