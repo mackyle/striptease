@@ -1,11 +1,11 @@
 striptease (or "tease" for short) is an enhanced version of strip.  It's
 capable of stripping a binary's symbol table of non-text local symbols.
-This mode, enabled with the -t switch, is similar to "strip -s", except
--s strips all local symbols including text symbols.  tease -t allows for
+This mode, enabled with the -t switch, is similar to "strip -x", except
+-x strips all local symbols including text symbols.  tease -t allows for
 useful CrashReporter stacks to be generated on the deployment host.  This
 is important in light of the hidden-visibility default (-fvisibility=hidden)
 that results in many symbols not being marked as global and therefore being
-stripped by an ordinary strip -s.
+stripped by an ordinary strip -x.
 
 tease also includes a -no_code_signature option, which strips any
 LC_CODE_SIGNATURE load commands from the target file, in much the same way
