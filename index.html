@@ -72,8 +72,9 @@ This repository contains an updated version of the striptease tool that is now b
 which builds on Mac OS X 10.4 and later (Mac OS X 10.6 and 10.7 require the Mac OS X 10.5 SDK to be present) and runs on Mac OS X 10.4 and later.
 
 <h2>Enhancements</h2>
-<p>The <tt>tease</tt> version of the strip tool has been enhanced to accept two additional options:
+<p>The <tt>tease</tt> version of the strip tool has been enhanced to accept three additional options:
 <ul class="ulnone">
+<li><tt>-t</tt><br /><span class="indent">Remove non-text local symbols (similar to <tt>strip</tt>'s <tt>-x</tt> option except that local symbols occurring in a text section are preserved -- good for crash reporter dumps)</span></li>
 <li><tt>-a</tt><br /><span class="indent">Pass all symbols through to the output file (i.e. do not strip any symbols at all).<br />
 Typically used together with <tt>-no_code_signature</tt> and/or <tt>-no_uuid</tt>.</span></li>
 <li><tt>-no_code_signature</tt><br /><span class="indent">Remove any code signature that's present from the output file.</span></li>
