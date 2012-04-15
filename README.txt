@@ -18,12 +18,12 @@ and only strip the relevant Mach-O load commands without removing anything
 from the symbol table.
 
 striptease is based on strip.c and other supporting files in Apple's
-cctools package.  This version of striptease is based on cctools-809,
-corresponding to Xcode Tools 4.2 and Mac OS X 10.7.  It builds properly
+cctools package.  This version of striptease is based on cctools-822,
+corresponding to Xcode Tools 4.3 and Mac OS X 10.7.  It builds properly
 under Xcode Tools 2.x on Mac OS X 10.4, as well.  The cctools package is
 available from:
 
-http://opensource.apple.com/tarballs/cctools/cctools-809.tar.gz
+http://opensource.apple.com/tarballs/cctools/cctools-822.tar.gz
 
 cctools, and therefore strip, are available under the APSL license:
 
@@ -43,4 +43,4 @@ Use "make clean" to remove the build directory and built executables.
 
 Note that when building on 10.6 or 10.7, the MacOSX10.5.sdk must be present.
 Also note that compile warnings (and link warnings when building on 10.4)
-should be ignored -- the cctools-809 sources have some issues with warnings.
+should be ignored -- the cctools-822 sources have some issues with warnings.

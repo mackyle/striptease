@@ -92,10 +92,12 @@ LIBSTUFF_SRC := $(wildcard libstuff/*.c)
 
 TEASE_SRC = \
 	tease.c \
+	version.c \
 	$(LIBSTUFF_SRC)
 
 STRIP_SRC = \
 	strip.c \
+	version.c \
 	$(LIBSTUFF_SRC)
 
 TEASE_OBJS = $(addprefix $(DD),$(TEASE_SRC:.c=.o))
