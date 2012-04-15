@@ -7,15 +7,19 @@ is important in light of the hidden-visibility default (-fvisibility=hidden)
 that results in many symbols not being marked as global and therefore being
 stripped by an ordinary strip -x.
 
-tease also includes a -no_code_signature option, which strips any
+tease also includes a -no_code_signature option which strips any
 LC_CODE_SIGNATURE load commands from the target file, in much the same way
 as the ordinary strip's -no_uuid option.
 
+tease also includes a -no_dylib filename option, which may be used more than
+once, that strips any DYLIB load commands referencing the specified
+filename.  The -no_dylib_unused option strips all unused dylib references.
+
 Finally, tease includes an -a option, which instructs it to regenerate the
-symbol table without stripping anything.  tease -a is intended to be used
-in conjunction with -no_code_signature (or -no_uuid), to pass over the file
-and only strip the relevant Mach-O load commands without removing anything
-from the symbol table.
+symbol table without stripping anything.  tease -a is intended to be used in
+conjunction with -no_code_signature, -no_uuid, -no_dylib or -no_dylib_unused
+to pass over the file and only strip the relevant Mach-O load commands
+without removing anything from the symbol table.
 
 striptease is based on strip.c and other supporting files in Apple's
 cctools package.  This version of striptease is based on cctools-822,

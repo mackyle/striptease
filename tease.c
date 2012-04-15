@@ -50,6 +50,11 @@
 #include <mach-o/prune_trie.h>
 #endif /* TRIE_SUPPORT */
 
+typedef struct dylib_name_s {
+  struct dylib_name_s *next;
+  char *name;
+} dylib_name;
+
 /* These are set from the command line arguments */
 __private_extern__
 char *progname = NULL;	/* name of the program for error messages (argv[0]) */
@@ -77,6 +82,10 @@ static uint32_t cflag;	/* -c strip section contents from dynamic libraries
 static uint32_t no_uuid;/* -no_uuid strip LC_UUID load commands */
 static uint32_t no_code_signature;
 			/* -no_code_signature strip LC_CODE_SIGNATURE cmds */
+static dylib_name *no_dylib;
+			/* -no_dylib options (zero or more) */
+static uint32_t no_dylib_unused;
+			/* strip unused dylib references */
 static uint32_t vflag;	/* -v for verbose debugging ld -r executions */
 static uint32_t lflag;	/* -l do ld -r executions even if it has bugs */
 static uint32_t strip_all = 1;
@@ -262,6 +271,11 @@ static void strip_LC_UUID_commands(
     struct member *member,
     struct object *object);
 
+static void strip_LC_DYLIB_commands(
+    struct arch *arch,
+    struct member *member,
+    struct object *object);
+
 #ifndef NMEDIT
 static void strip_LC_CODE_SIGNATURE_commands(
     struct arch *arch,
@@ -417,6 +431,21 @@ char *envp[])
 		}
 		else if(strcmp(argv[i], "-no_uuid") == 0){
 		    no_uuid = 1;
+		}
+		else if(strcmp(argv[i], "-no_dylib") == 0){
+		    dylib_name *dname;
+		    if(i + 1 >= argc)
+			fatal("-no_dylib requires an argument");
+		    dname = (dylib_name *)malloc(sizeof(dylib_name));
+		    if(!dname)
+			fatal("out of memory (malloc failed)");
+		    dname->next = no_dylib;
+		    dname->name = argv[i + 1];
+		    no_dylib = dname;
+		    i++;
+		}
+		else if(strcmp(argv[i], "-no_dylib_unused") == 0){
+		    no_dylib_unused = 1;
 		}
 		else if(strcmp(argv[i], "-no_code_signature") == 0){
 		    no_code_signature = 1;
@@ -588,6 +617,7 @@ char *envp[])
 			strcmp(argv[i], "-R") == 0 ||
 #ifndef NMEDIT
 			strcmp(argv[i], "-d") == 0 ||
+			strcmp(argv[i], "-no_dylib") == 0 ||
 #endif /* !defined(NMEDIT) */
 			strcmp(argv[i], "-arch") == 0)
 		    i++;
@@ -618,8 +648,9 @@ void)
 {
 #ifndef NMEDIT
 	fprintf(stderr, "Usage: %s [-AanuStXx] [-no_uuid] [-no_code_signature] "
-		"[-] [-d filename] [-s filename] [-R filename] [-o output] "
-		"file [...]\n", progname);
+		"[-no_dylib filename] [-no_dylib_unused] [-] [-d filename] "
+		"[-s filename] [-R filename] [-o output] file [...]\n",
+		progname);
 #else /* defined(NMEDIT) */
 	fprintf(stderr, "Usage: %s -s filename [-R filename] [-p] [-A] [-] "
 		"[-o output] file [...] \n",
@@ -1258,6 +1289,8 @@ struct object *object)
 		return;
 	    if(no_uuid == TRUE)
 		strip_LC_UUID_commands(arch, member, object);
+	    if(no_dylib || no_dylib_unused)
+		strip_LC_DYLIB_commands(arch, member, object);
 #endif /* !defined(NMEDIT) */
 	    /*
 	     * The parts that make up output_sym_info_size must be added up in
@@ -4171,6 +4204,217 @@ struct object *object)
 		object->dyld_info = (struct dyld_info_command *)lc1;
 	    }
 	    lc1 = (struct load_command *)((char *)lc1 + lc1->cmdsize);
+	}
+}
+
+/*
+ * strip_LC_DYLIB_commands() is called when -no_dylib is specified to remove any
+ * LC_LOAD_DYLIB, LC_LOAD_WEAK_DYLIB or LC_REEXPORT_DYLIB load commands from the
+ * object's load commands that reference any of the -no_dylib shared libraries.
+ */
+static
+void
+strip_LC_DYLIB_commands(
+struct arch *arch,
+struct member *member,
+struct object *object)
+{
+    uint32_t i, ncmds, ndylibs, dyidx, newnum, mh_sizeofcmds, sizeofcmds;
+    struct load_command *lc1, *lc2, *new_load_commands;
+    struct segment_command *sg;
+    uint8_t inuse[256], renum[256];
+
+	/*
+	 * See if there are any DYLIB load commands.
+	 */
+	ndylibs = 0;
+	lc1 = arch->object->load_commands;
+        if(arch->object->mh != NULL){
+            ncmds = arch->object->mh->ncmds;
+	    mh_sizeofcmds = arch->object->mh->sizeofcmds;
+	}
+	else{
+            ncmds = arch->object->mh64->ncmds;
+	    mh_sizeofcmds = arch->object->mh64->sizeofcmds;
+	}
+	for(i = 0; i < ncmds; i++){
+	    if(lc1->cmd == LC_LOAD_DYLIB ||
+	       lc1->cmd == LC_LOAD_WEAK_DYLIB ||
+	       lc1->cmd == LC_REEXPORT_DYLIB ||
+	       lc1->cmd == LC_LAZY_LOAD_DYLIB ||
+	       lc1->cmd == LC_LOAD_UPWARD_DYLIB){
+		ndylibs++;
+	    }
+	    lc1 = (struct load_command *)((char *)lc1 + lc1->cmdsize);
+	}
+	/* if no DYLIB load commands just return */
+	if(ndylibs == 0)
+	    return;
+
+	/*
+	 * Allocate space for the new load commands as zero it out so any holes
+	 * will be zero bytes.
+	 */
+	new_load_commands = allocate(mh_sizeofcmds);
+	memset(new_load_commands, '\0', mh_sizeofcmds);
+
+	/*
+	 * Find dylib references currently in use by undefined symbols
+	 */
+	memset(inuse, 0, sizeof(inuse));
+	memset(renum, 0, sizeof(renum));
+	if (new_symbols) {
+	    for (i=0; i<new_nsyms; ++i) {
+		if ((new_symbols[i].n_type & N_TYPE) == N_UNDF) {
+		    uint8_t ordn = GET_LIBRARY_ORDINAL(new_symbols[i].n_desc);
+		    if (1 <= ordn && ordn <= MAX_LIBRARY_ORDINAL)
+			inuse[ordn] = 1;
+		}
+	    }
+	}
+	else if (new_symbols64) {
+	    for (i=0; i<new_nsyms; ++i) {
+		if ((new_symbols64[i].n_type & N_TYPE) == N_UNDF) {
+		    uint8_t ordn = GET_LIBRARY_ORDINAL(new_symbols[i].n_desc);
+		    if (1 <= ordn && ordn <= MAX_LIBRARY_ORDINAL)
+			inuse[ordn] = 1;
+		}
+	    }
+	}
+
+	/*
+	 * Copy all the load commands except the matching DYLIB load commands
+	 * into the allocated space for the new load commands.
+	 */
+	lc1 = arch->object->load_commands;
+	lc2 = new_load_commands;
+	sizeofcmds = 0;
+	ndylibs = 0;
+	dyidx = 0;
+	newnum = 0;
+	for(i = 0; i < ncmds; i++){
+	    int ignore = 0;
+	    if(lc1->cmd == LC_LOAD_DYLIB ||
+	       lc1->cmd == LC_LOAD_WEAK_DYLIB ||
+	       lc1->cmd == LC_REEXPORT_DYLIB ||
+	       lc1->cmd == LC_LAZY_LOAD_DYLIB ||
+	       lc1->cmd == LC_LOAD_UPWARD_DYLIB){
+		struct dylib_command *dlc = (struct dylib_command *)lc1;
+		char *name = (char *)lc1 + dlc->dylib.name.offset;
+		dylib_name *ptr;
+		++dyidx;
+		if (no_dylib_unused)
+		    ignore = !inuse[dyidx];
+		for (ptr = no_dylib; !ignore && ptr; ptr = ptr->next) {
+		    if (strcmp(ptr->name, name) == 0) {
+			if (inuse[dyidx]) {
+			    fatal_arch(arch, member, "can't remove inuse "
+			    "dylib reference %s from: ", name);
+			}
+			else {
+			    ignore = 1;
+			}
+			break;
+		    }
+		}
+		if (ignore)
+		    ++ndylibs;
+		else
+		    renum[dyidx] = ++newnum;
+	    }
+	    if(!ignore){
+		memcpy(lc2, lc1, lc1->cmdsize);
+		sizeofcmds += lc2->cmdsize;
+		lc2 = (struct load_command *)((char *)lc2 + lc2->cmdsize);
+	    }
+	    lc1 = (struct load_command *)((char *)lc1 + lc1->cmdsize);
+	}
+
+	/*
+	 * Finally copy the updated load commands over the existing load
+	 * commands.
+	 */
+	memcpy(arch->object->load_commands, new_load_commands, sizeofcmds);
+	if(mh_sizeofcmds > sizeofcmds){
+		memset((char *)arch->object->load_commands + sizeofcmds, '\0',
+			   (mh_sizeofcmds - sizeofcmds));
+	}
+	ncmds -= ndylibs;
+        if(arch->object->mh != NULL) {
+            arch->object->mh->sizeofcmds = sizeofcmds;
+            arch->object->mh->ncmds = ncmds;
+        } else {
+            arch->object->mh64->sizeofcmds = sizeofcmds;
+            arch->object->mh64->ncmds = ncmds;
+        }
+	free(new_load_commands);
+
+	/* reset the pointers into the load commands */
+	lc1 = arch->object->load_commands;
+	for(i = 0; i < ncmds; i++){
+	    switch(lc1->cmd){
+	    case LC_SYMTAB:
+		arch->object->st = (struct symtab_command *)lc1;
+	        break;
+	    case LC_DYSYMTAB:
+		arch->object->dyst = (struct dysymtab_command *)lc1;
+		break;
+	    case LC_TWOLEVEL_HINTS:
+		arch->object->hints_cmd = (struct twolevel_hints_command *)lc1;
+		break;
+	    case LC_PREBIND_CKSUM:
+		arch->object->cs = (struct prebind_cksum_command *)lc1;
+		break;
+	    case LC_SEGMENT:
+		sg = (struct segment_command *)lc1;
+		if(strcmp(sg->segname, SEG_LINKEDIT) == 0)
+		    arch->object->seg_linkedit = sg;
+		break;
+	    case LC_SEGMENT_SPLIT_INFO:
+		object->split_info_cmd = (struct linkedit_data_command *)lc1;
+		break;
+	    case LC_FUNCTION_STARTS:
+		object->func_starts_info_cmd =
+				         (struct linkedit_data_command *)lc1;
+		break;
+	    case LC_DATA_IN_CODE:
+		object->data_in_code_cmd =
+				         (struct linkedit_data_command *)lc1;
+		break;
+	    case LC_DYLIB_CODE_SIGN_DRS:
+		object->code_sign_drs_cmd =
+				         (struct linkedit_data_command *)lc1;
+		break;
+	    case LC_CODE_SIGNATURE:
+		object->code_sig_cmd = (struct linkedit_data_command *)lc1;
+		break;
+	    case LC_DYLD_INFO_ONLY:
+	    case LC_DYLD_INFO:
+		object->dyld_info = (struct dyld_info_command *)lc1;
+	    }
+	    lc1 = (struct load_command *)((char *)lc1 + lc1->cmdsize);
+	}
+
+	/*
+	 * Renumber symbol dylib references
+	 */
+	if (new_symbols) {
+	    for (i=0; i<new_nsyms; ++i) {
+		if ((new_symbols[i].n_type & N_TYPE) == N_UNDF) {
+		    uint8_t n = GET_LIBRARY_ORDINAL(new_symbols[i].n_desc);
+		    if (1 <= n && n <= MAX_LIBRARY_ORDINAL)
+			SET_LIBRARY_ORDINAL(new_symbols[i].n_desc, renum[n]);
+		}
+	    }
+	}
+	else if (new_symbols64) {
+	    for (i=0; i<new_nsyms; ++i) {
+		if ((new_symbols64[i].n_type & N_TYPE) == N_UNDF) {
+		    uint8_t n = GET_LIBRARY_ORDINAL(new_symbols64[i].n_desc);
+		    if (1 <= n && n <= MAX_LIBRARY_ORDINAL)
+			SET_LIBRARY_ORDINAL(new_symbols64[i].n_desc, renum[n]);
+		}
+	    }
 	}
 }
 
