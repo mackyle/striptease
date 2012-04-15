@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<html>
+<html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-  <meta charset='utf-8'>
+  <meta charset='utf-8' />
 
   <title>mackyle/striptease @ GitHub</title>
 
@@ -25,6 +25,7 @@
     a { color: black; }
     .description { font-size: 1.2em; margin-bottom: 2em; margin-top: 2em; font-style: italic; }
     .download { float: right; }
+    tt, .nowrap { white-space: nowrap; }
     pre { font-family: Menlo, Monaco, Consolas, Courier, "Courier New", monospace; font-size: 90%;}
     pre { padding: 0.5em 1ex; border: thin dotted silver; }
     hr { border: 0; width: 80%; border-bottom: thin solid silver; }
@@ -33,7 +34,7 @@
     .footer { text-align:center; padding-top:2em; font-style: italic; }
     ul.ulnone { list-style-type: none; }
     li { margin-top: 0.5em; margin-bottom: 0.5em; }
-    .indent { display: block; margin-left: 5ex;}
+    .indent { display: block; margin-left: 5ex; margin-right: 5ex; text-align: left; }
   </style>
 </head>
 
@@ -44,9 +45,9 @@
 
 <div class="download">
   <a href="http://github.com/mackyle/striptease/zipball/master">
-    <img border="0" width="90" src="http://github.com/images/modules/download/zip.png"></a>
+    <img border="0" width="90" src="http://github.com/images/modules/download/zip.png" /></a>
   <a href="http://github.com/mackyle/striptease/tarball/master">
-    <img border="0" width="90" src="http://github.com/images/modules/download/tar.png"></a>
+    <img border="0" width="90" src="http://github.com/images/modules/download/tar.png" /></a>
 </div>
 
 <h1><a href="http://github.com/mackyle/striptease">striptease</a>
@@ -62,22 +63,25 @@
 
 </p><p>
 
-The original version of striptease in the Camino repository is based on Apple's
+The original version of striptease in the Camino repository is based on Apple&#x2019;s
 <a href="http://opensource.apple.com/source/cctools/cctools-667.3/">cctools-667.3 sources</a> which correspond to Xcode 3.0 / Mac OS X 10.5.0 and does not appear to have been updated since it was added to the Camino repository.
 
 </p><p>
 
-This repository contains an updated version of the striptease tool that is now based on Apple's
-<a href="http://opensource.apple.com/source/cctools/cctools-809/">cctools-809 sources</a> which correspond to Xcode 4.2 / Mac OS X 10.7 and
+This repository contains an updated version of the striptease tool that is now based on Apple&#x2019;s
+<a href="http://opensource.apple.com/source/cctools/cctools-822/">cctools-822 sources</a> which correspond to Xcode 4.3 / Mac OS X 10.7 and
 which builds on Mac OS X 10.4 and later (Mac OS X 10.6 and 10.7 require the Mac OS X 10.5 SDK to be present) and runs on Mac OS X 10.4 and later.
+</p>
 
 <h2>Enhancements</h2>
-<p>The <tt>tease</tt> version of the strip tool has been enhanced to accept three additional options:
+<p>The <tt>tease</tt> version of the strip tool has been enhanced to accept five additional options:
 <ul class="ulnone">
-<li><tt>-t</tt><br /><span class="indent">Remove non-text local symbols (similar to <tt>strip</tt>'s <tt>-x</tt> option except that local symbols occurring in a text section are preserved -- good for crash reporter dumps)</span></li>
+<li><tt>-t</tt><br /><span class="indent">Remove non-text local symbols (similar to <tt>strip</tt>&#x2019;s <tt>-x</tt> option except that local symbols occurring in a text section are preserved &#x2014; good for crash reporter dumps)</span></li>
 <li><tt>-a</tt><br /><span class="indent">Pass all symbols through to the output file (i.e. do not strip any symbols at all).<br />
-Typically used together with <tt>-no_code_signature</tt> and/or <tt>-no_uuid</tt>.</span></li>
-<li><tt>-no_code_signature</tt><br /><span class="indent">Remove any code signature that's present from the output file.</span></li>
+Typically used together with <tt>-no_code_signature</tt>, <tt>-no_uuid</tt>. <tt>-no_dylib</tt> and/or <tt>-no_dylib_unused</tt>.</span></li>
+<li><tt>-no_code_signature</tt><br /><span class="indent">Remove any code signature that&#x2019;s present from the output file.</span></li>
+<li><tt>-no_dylib <i>filename</i></tt><br /><span class="indent">Remove unused dylib references to <i>filename</i> from the output file. This option may be repeated multiple times.</span></li>
+<li><tt>-no_dylib_unused</tt><br /><span class="indent">Remove all unused dylib references from the output file.</span></li>
 </ul>
 
 Also see the <a href="https://github.com/mackyle/striptease/blob/master/README.txt">README.txt</a> file
@@ -91,16 +95,16 @@ like to create <tt>MyUnsignedBinary</tt> which has neither a UUID nor a code sig
 symbols and debugging information (if any) present in <tt>MySignedBinary</tt>.
 
 You can use the <tt>tease</tt> tool to create <tt>MyUnsignedBinary</tt> from <tt>MySignedBinary</tt> like so:
-<pre>
-tease -a -no_uuid -no_code_signature -o MyUnsignedBinary MySignedBinary
+<pre
+>tease -a -no_uuid -no_code_signature -o MyUnsignedBinary MySignedBinary
 </pre>
 </p>
 
 <h2>Install</h2>
 <p>See the <a href="https://github.com/mackyle/striptease/blob/master/README.txt">README.txt</a> file, but
-it's as simple as doing the following steps:
-<pre>
-git clone git://github.com/mackyle/striptease
+it&#x2019;s as simple as doing the following steps:
+<pre
+>git clone git://github.com/mackyle/striptease
 cd striptease
 make
 sudo mkdir -p /usr/local/bin
@@ -115,10 +119,11 @@ Most all of the source is original Apple source code (see the source files thems
 <a href="http://www.opensource.apple.com/license/apsl/">the APSL</a>.  There are a few files (again see the source files themselves)
 that are covered under the
 <a href="http://www.gnu.org/licenses/license-list.html#X11License">MIT/X11 license</a>.
+</p>
 
 <h2>Download</h2>
 <p>
-  You can download this project's source code in either
+  You can download this project&#x2019;s source code in either
   <a href="http://github.com/mackyle/striptease/zipball/master">zip</a> or
   <a href="http://github.com/mackyle/striptease/tarball/master">tar</a> formats.
 </p>
@@ -128,7 +133,8 @@ that are covered under the
 </p>
 <p>Pre-built universal binaries of the <tt>tease</tt> executable runnable on Mac OS X 10.4 or later
 are available from <a href="https://github.com/mackyle/striptease/downloads">the
-striptease project's downloads area</a>.
+striptease project&#x2019;s downloads area</a>.
+</p>
 
 <h2>GitHub</h2>
 <p class="left">
