@@ -4275,7 +4275,7 @@ struct object *object)
 	else if (new_symbols64) {
 	    for (i=0; i<new_nsyms; ++i) {
 		if ((new_symbols64[i].n_type & N_TYPE) == N_UNDF) {
-		    uint8_t ordn = GET_LIBRARY_ORDINAL(new_symbols[i].n_desc);
+		    uint8_t ordn = GET_LIBRARY_ORDINAL(new_symbols64[i].n_desc);
 		    if (1 <= ordn && ordn <= MAX_LIBRARY_ORDINAL)
 			inuse[ordn] = 1;
 		}
