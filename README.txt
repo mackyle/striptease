@@ -46,9 +46,6 @@ Use "make DEBUG=1" to build a build/Debug/tease debug executable.
 Use "make clean" to remove the build directory and built executables.
 
 Note that when building on 10.6 or 10.7, the MacOSX10.5.sdk must be present.
-Also note that compile warnings (and link warnings when building on 10.4)
-should be ignored -- the cctools-822 sources have some issues with warnings
-especially when building for the ppc architecture.
 
 As a convenience, the install_name_tool.c source is also included here
 along with an install_name_tool target in the makefile.  The tools target

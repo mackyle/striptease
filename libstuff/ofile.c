@@ -60,6 +60,10 @@
 #import <mach/i860/thread_status.h>
 #import <mach/i386/thread_status.h>
 #import <mach/sparc/thread_status.h>
+#undef MACHINE_THREAD_STATE     /* need to undef these to avoid warnings */
+#undef MACHINE_THREAD_STATE_COUNT
+#undef THREAD_STATE_NONE
+#undef VALID_THREAD_STATE_FLAVOR
 #import <mach/arm/thread_status.h>
 #include <mach-o/nlist.h>
 #include <mach-o/reloc.h>

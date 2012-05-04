@@ -97,7 +97,7 @@ endif
 
 COPTS += -include preinc.h -DCCTOOLSVER=$(CCTOOLSVER)
 
-LDOPTS = -Wl,-no_uuid -Wl,-dead_strip
+LDOPTS = -Wl,-no_uuid -Wl,-dead_strip -Wl,-multiply_defined,suppress
 LDOPTS += $(LDEXTRA)
 
 all : $(DD)tease
