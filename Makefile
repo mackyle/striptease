@@ -23,6 +23,8 @@
 # dealings in this Software without prior written authorization from the
 # author(s).
 
+CCTOOLSVER = 822
+
 .PHONY : all clean
 
 ifeq ($(DEBUG),)
@@ -125,6 +127,7 @@ ifneq ($(DEBUG),0)
 	dsymutil $@
 else
 	strip $@
+	cd '$(@D)' && zip -X -9 '$(@F)-$(CCTOOLSVER).zip' '$(@F)'
 endif
 
 $(DD)strip : $(STRIP_OBJS)
@@ -133,6 +136,7 @@ ifneq ($(DEBUG),0)
 	dsymutil $@
 else
 	strip $@
+	cd '$(@D)' && zip -X -9 '$(@F)-$(CCTOOLSVER).zip' '$(@F)'
 endif
 
 $(DD)install_name_tool : $(INSTALL_NAME_TOOL_OBJS)
@@ -141,6 +145,7 @@ ifneq ($(DEBUG),0)
 	dsymutil $@
 else
 	strip $@
+	cd '$(@D)' && zip -X -9 '$(@F)-$(CCTOOLSVER).zip' '$(@F)'
 endif
 
 clean :
