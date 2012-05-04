@@ -39,11 +39,13 @@ XSDK := /Developer/SDKs
 endif
 
 OSXNUVER := $(shell uname -r | cut -d. -f1)
+OSXNUVERACTUAL := $(shell uname -r | cut -d. -f1)
 
 ifeq ($(DEBUG),0)
   $(shell mkdir -p build/Release/libstuff)
   DD=build/Release/
-  COPTS=-Os
+  COPTS=$(ARCH) -Os
+  LDEXTRA=$(ARCH) -Wl,-S -Wl,-x
 else
   $(shell mkdir -p build/Debug/libstuff)
   DD=build/Debug/
@@ -51,42 +53,45 @@ else
   LDEXTRA=-g
 endif
 
-COPTS += -mmacosx-version-min=10.4
-ifeq ($(OSXNUVER),8)
-COPTS += -isysroot$(XSDK)/MacOSX10.4u.sdk
-else
-COPTS += -isysroot$(XSDK)/MacOSX10.5.sdk
-endif
-COPTS += -include preinc.h
-ifneq ($(OSXNUVER),8)
-COPTS += -arch x86_64
-endif
-COPTS += -arch i386 -arch ppc
-
-LDOPTS = -Wl,-no_uuid
-LDOPTS += -mmacosx-version-min=10.4
-ifneq ($(OSXNUVER),8)
-LDOPTS += -Xarch_x86_64 -mmacosx-version-min=10.5
-endif
 # The 10.4u SDK can be used, but do not require it except on 10.4.x
+# Always build x86_64 if actually running on 10.5 or later
 ifeq ($(OSXNUVER),8)
-LDOPTS += -isysroot$(XSDK)/MacOSX10.4u.sdk
+ ifneq ($(OSXNUVERACTUAL),8)
+  ARCH = -arch x86_64 -arch i386 -arch ppc
+  ARCH += -Xarch_ppc -mmacosx-version-min=10.4
+  ARCH += -Xarch_ppc -isysroot$(XSDK)/MacOSX10.4u.sdk
+  ARCH += -Xarch_i386 -mmacosx-version-min=10.4
+  ARCH += -Xarch_i386 -isysroot$(XSDK)/MacOSX10.4u.sdk
+  ARCH += -Xarch_x86_64 -mmacosx-version-min=10.5
+  ARCH += -Xarch_x86_64 -isysroot$(XSDK)/MacOSX10.5.sdk
+ else
+  ARCH = -arch i386 -arch ppc
+  ARCH += -mmacosx-version-min=10.4 -isysroot$(XSDK)/MacOSX10.4u.sdk
+ endif
 else
-LDOPTS += -isysroot$(XSDK)/MacOSX10.5.sdk
+ ARCH = -arch x86_64 -arch i386 -arch ppc
+ ARCH += -Xarch_ppc -mmacosx-version-min=10.4
+ ARCH += -Xarch_i386 -mmacosx-version-min=10.4
+ ARCH += -Xarch_x86_64 -mmacosx-version-min=10.5
+ ARCH += -isysroot$(XSDK)/MacOSX10.5.sdk
 endif
-ifneq ($(OSXNUVER),8)
-LDOPTS += -arch x86_64
-endif
-LDOPTS += -arch i386 -arch ppc
+
+COPTS += -include preinc.h
+
+LDOPTS = -Wl,-no_uuid -Wl,-dead_strip
 LDOPTS += $(LDEXTRA)
 
 all : $(DD)tease
 
-.PHONY : tease strip
+.PHONY : tools tease strip install_name_tool
+
+tools : strip install_name_tool tease
 
 tease : $(DD)tease
 
 strip : $(DD)strip
+
+install_name_tool : $(DD)install_name_tool
 
 LIBSTUFF_SRC := $(wildcard libstuff/*.c)
 
@@ -100,9 +105,16 @@ STRIP_SRC = \
 	version.c \
 	$(LIBSTUFF_SRC)
 
+INSTALL_NAME_TOOL_SRC = \
+	install_name_tool.c \
+	version.c \
+	$(LIBSTUFF_SRC)
+
 TEASE_OBJS = $(addprefix $(DD),$(TEASE_SRC:.c=.o))
 
 STRIP_OBJS = $(addprefix $(DD),$(STRIP_SRC:.c=.o))
+
+INSTALL_NAME_TOOL_OBJS = $(addprefix $(DD),$(INSTALL_NAME_TOOL_SRC:.c=.o))
 
 $(DD)%.o : %.c
 	$(CC) -Wall -c $(COPTS) $(CINC) -o $@ $<
@@ -111,12 +123,24 @@ $(DD)tease : $(TEASE_OBJS)
 	$(CC) -o $@ $(LDOPTS) $^
 ifneq ($(DEBUG),0)
 	dsymutil $@
+else
+	strip $@
 endif
 
 $(DD)strip : $(STRIP_OBJS)
 	$(CC) -o $@ $(LDOPTS) $^
 ifneq ($(DEBUG),0)
 	dsymutil $@
+else
+	strip $@
+endif
+
+$(DD)install_name_tool : $(INSTALL_NAME_TOOL_OBJS)
+	$(CC) -o $@ $(LDOPTS) $^
+ifneq ($(DEBUG),0)
+	dsymutil $@
+else
+	strip $@
 endif
 
 clean :
