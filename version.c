@@ -23,7 +23,7 @@ extern const char apple_version[];
 #define CCTOOLSVERSTR
 #endif
 __attribute__((__used__)) const char apple_version[] =
-/* Create a string that is compatible with the ident program */
+/* Create a string that is compatible with both the ident and what programs */
 "@(#)$PROGRAM: " STRINGIZE_PN(PROGRAMNAME) ARCHNAME
-   "  PROJECT: cctools"CCTOOLSVERSTR" <http://mackyle.github.com/striptease> $"
+   "  PROJECT: cctools"CCTOOLSVERSTR" http://mackyle.github.com/striptease $"
 ;
