@@ -99,27 +99,34 @@ LIBSTUFF_SRC := $(wildcard libstuff/*.c)
 
 TEASE_SRC = \
 	tease.c \
-	version.c \
 	$(LIBSTUFF_SRC)
 
 STRIP_SRC = \
 	strip.c \
-	version.c \
 	$(LIBSTUFF_SRC)
 
 INSTALL_NAME_TOOL_SRC = \
 	install_name_tool.c \
-	version.c \
 	$(LIBSTUFF_SRC)
 
-TEASE_OBJS = $(addprefix $(DD),$(TEASE_SRC:.c=.o))
+TEASE_OBJS = $(addprefix $(DD),$(TEASE_SRC:.c=.o)) $(DD)version_tease.o
 
-STRIP_OBJS = $(addprefix $(DD),$(STRIP_SRC:.c=.o))
+STRIP_OBJS = $(addprefix $(DD),$(STRIP_SRC:.c=.o)) $(DD)version_strip.o
 
-INSTALL_NAME_TOOL_OBJS = $(addprefix $(DD),$(INSTALL_NAME_TOOL_SRC:.c=.o))
+INSTALL_NAME_TOOL_OBJS = $(addprefix $(DD),$(INSTALL_NAME_TOOL_SRC:.c=.o)) \
+	$(DD)version_install_name_tool.o
 
 $(DD)%.o : %.c
 	$(CC) -Wall -c $(COPTS) $(CINC) -o $@ $<
+
+$(DD)version_tease.o : version.c
+	$(CC) -Wall -c $(COPTS) $(CINC) -DPROGRAMNAME=tease -o $@ $<
+
+$(DD)version_strip.o : version.c
+	$(CC) -Wall -c $(COPTS) $(CINC) -DPROGRAMNAME=strip -o $@ $<
+
+$(DD)version_install_name_tool.o : version.c
+	$(CC) -Wall -c $(COPTS) $(CINC) -DPROGRAMNAME=install_name_tool -o $@ $<
 
 $(DD)tease : $(TEASE_OBJS)
 	$(CC) -o $@ $(LDOPTS) $^
