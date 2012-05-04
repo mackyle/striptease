@@ -28,31 +28,48 @@ CCTOOLSVER = 822
 .PHONY : all clean
 
 ifeq ($(DEBUG),)
-  DEBUG := 0
+ DEBUG := 0
 endif
 
 export DEBUG
 
 CC = gcc-4.0
 CINC = -Iinclude
-XSDK := $(shell xcode-select -print-path 2>/dev/null)/SDKs
-ifeq ($(XSDK),/SDKs)
-XSDK := /Developer/SDKs
+XSDK := $(shell xcode-select -print-path 2>/dev/null)
+ifeq ($(XSDK),)
+ XSDK := /Developer
+endif
+ifeq (0,$(shell test -d '$(XSDK)/Platforms/MacOSX.platform/Developer/SDKs'; echo $$?))
+ XSDK := $(XSDK)/Platforms/MacOSX.platform/Developer/SDKs
+else
+ ifeq (0,$(shell test -d '$(XSDK)/SDKs'; echo $$?))
+  XSDK := $(XSDK)/SDKs
+ else
+  ifeq ($(DEBUG),0)
+   ifneq ($(MAKECMDGOALS),clean)
+    $(error Could not find Developer SDKs directory)
+   endif
+  endif
+ endif
 endif
 
 OSXNUVER := $(shell uname -r | cut -d. -f1)
 OSXNUVERACTUAL := $(shell uname -r | cut -d. -f1)
 
+ifeq (0,$(shell test -d '$(XSDK)/MacOSX10.4u.sdk'; echo $$?))
+ OSXNUVER := 8
+endif
+
 ifeq ($(DEBUG),0)
-  $(shell mkdir -p build/Release/libstuff)
-  DD=build/Release/
-  COPTS=$(ARCH) -Os
-  LDEXTRA=$(ARCH) -Wl,-S -Wl,-x
+ $(shell mkdir -p build/Release/libstuff)
+ DD=build/Release/
+ COPTS=$(ARCH) -Os
+ LDEXTRA=$(ARCH) -Wl,-S -Wl,-x
 else
-  $(shell mkdir -p build/Debug/libstuff)
-  DD=build/Debug/
-  COPTS=-O0 -g
-  LDEXTRA=-g
+ $(shell mkdir -p build/Debug/libstuff)
+ DD=build/Debug/
+ COPTS=-O0 -g
+ LDEXTRA=-g
 endif
 
 # The 10.4u SDK can be used, but do not require it except on 10.4.x
