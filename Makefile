@@ -23,7 +23,7 @@
 # dealings in this Software without prior written authorization from the
 # author(s).
 
-CCTOOLSVER = 822
+include version.mak
 
 .PHONY : all clean
 
@@ -95,7 +95,7 @@ else
  ARCH += -isysroot$(XSDK)/MacOSX10.5.sdk
 endif
 
-COPTS += -include preinc.h
+COPTS += -include preinc.h -DCCTOOLSVER=$(CCTOOLSVER)
 
 LDOPTS = -Wl,-no_uuid -Wl,-dead_strip
 LDOPTS += $(LDEXTRA)

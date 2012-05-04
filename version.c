@@ -17,8 +17,13 @@ extern const char apple_version[];
 #else
 #define ARCHNAME
 #endif
+#ifdef CCTOOLSVER
+#define CCTOOLSVERSTR "-"STRINGIZE_PN(CCTOOLSVER)
+#else
+#define CCTOOLSVERSTR
+#endif
 __attribute__((__used__)) const char apple_version[] =
 /* Create a string that is compatible with the ident program */
 "@(#)$PROGRAM: " STRINGIZE_PN(PROGRAMNAME) ARCHNAME
-   "  PROJECT: cctools-822 <http://mackyle.github.com/striptease> $"
+   "  PROJECT: cctools"CCTOOLSVERSTR" <http://mackyle.github.com/striptease> $"
 ;
