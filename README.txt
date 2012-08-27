@@ -47,8 +47,11 @@ Use "make clean" to remove the build directory and built executables.
 
 Note that when building on 10.6 or 10.7, the MacOSX10.5.sdk must be present.
 
-As a convenience, the install_name_tool.c source is also included here
-along with an install_name_tool target in the makefile.  The tools target
-will make all three tools (strip, tease, install_name_tool).  The resulting
-install_name_tool will run on 10.4+ but understand newer load commands so
-it can successfully adjust paths in newer binaries on older systems.
+As a convenience, the install_name_tool.c source and nm.c source is also
+included here along with an install_name_tool target and nm target in the
+makefile.  The tools target will make all four tools (strip, tease,
+install_name_tool, nm).  The resulting install_name_tool will run on 10.4+
+but understand newer load commands so it can successfully adjust paths in
+newer binaries on older systems.  The resulting nm will run on 10.4+ but
+understand newer load commands so it can successfully examine symbols in
+newer binaries on older systems.

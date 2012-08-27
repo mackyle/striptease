@@ -102,15 +102,17 @@ LDOPTS += $(LDEXTRA)
 
 all : $(DD)tease
 
-.PHONY : tools tease strip install_name_tool
+.PHONY : tools tease strip install_name_tool nm
 
-tools : strip install_name_tool tease
+tools : strip install_name_tool nm tease
 
 tease : $(DD)tease
 
 strip : $(DD)strip
 
 install_name_tool : $(DD)install_name_tool
+
+nm : $(DD)nm
 
 LIBSTUFF_SRC := $(wildcard libstuff/*.c)
 
@@ -126,12 +128,18 @@ INSTALL_NAME_TOOL_SRC = \
 	install_name_tool.c \
 	$(LIBSTUFF_SRC)
 
+NM_SRC = \
+	nm.c \
+	$(LIBSTUFF_SRC)
+
 TEASE_OBJS = $(addprefix $(DD),$(TEASE_SRC:.c=.o)) $(DD)version_tease.o
 
 STRIP_OBJS = $(addprefix $(DD),$(STRIP_SRC:.c=.o)) $(DD)version_strip.o
 
 INSTALL_NAME_TOOL_OBJS = $(addprefix $(DD),$(INSTALL_NAME_TOOL_SRC:.c=.o)) \
 	$(DD)version_install_name_tool.o
+
+NM_OBJS = $(addprefix $(DD),$(NM_SRC:.c=.o)) $(DD)nm.o
 
 $(DD)%.o : %.c
 	$(CC) -Wall -c $(COPTS) $(CINC) -o $@ $<
@@ -144,6 +152,9 @@ $(DD)version_strip.o : version.c
 
 $(DD)version_install_name_tool.o : version.c
 	$(CC) -Wall -c $(COPTS) $(CINC) -DPROGRAMNAME=install_name_tool -o $@ $<
+
+$(DD)version_nm.o : version.c
+	$(CC) -Wall -c $(COPTS) $(CINC) -DPROGRAMNAME=nm -o $@ $<
 
 $(DD)tease : $(TEASE_OBJS)
 	$(CC) -o $@ $(LDOPTS) $^
@@ -164,6 +175,15 @@ else
 endif
 
 $(DD)install_name_tool : $(INSTALL_NAME_TOOL_OBJS)
+	$(CC) -o $@ $(LDOPTS) $^
+ifneq ($(DEBUG),0)
+	dsymutil $@
+else
+	strip $@
+	cd '$(@D)' && zip -X -9 '$(@F)-$(CCTOOLSVER).zip' '$(@F)'
+endif
+
+$(DD)nm : $(NM_OBJS)
 	$(CC) -o $@ $(LDOPTS) $^
 ifneq ($(DEBUG),0)
 	dsymutil $@
