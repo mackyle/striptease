@@ -25,5 +25,5 @@ extern const char apple_version[];
 __attribute__((__used__)) const char apple_version[] =
 /* Create a string that is compatible with both the ident and what programs */
 "@(#)$PROGRAM: " STRINGIZE_PN(PROGRAMNAME) ARCHNAME
-   "  PROJECT: cctools"CCTOOLSVERSTR" http://mackyle.github.com/striptease $"
+   "  PROJECT: cctools"CCTOOLSVERSTR" http://mackyle.github.io/striptease $"
 ;
