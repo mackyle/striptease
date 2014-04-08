@@ -33,7 +33,7 @@ endif
 
 export DEBUG
 
-CC = gcc-4.0
+CC = clang
 CINC = -Iinclude
 XSDK := $(shell xcode-select -print-path 2>/dev/null)
 ifeq ($(XSDK),)
@@ -72,28 +72,7 @@ else
  LDEXTRA=-g
 endif
 
-# The 10.4u SDK can be used, but do not require it except on 10.4.x
-# Always build x86_64 if actually running on 10.5 or later
-ifeq ($(OSXNUVER),8)
- ifneq ($(OSXNUVERACTUAL),8)
-  ARCH = -arch x86_64 -arch i386 -arch ppc
-  ARCH += -Xarch_ppc -mmacosx-version-min=10.4
-  ARCH += -Xarch_ppc -isysroot$(XSDK)/MacOSX10.4u.sdk
-  ARCH += -Xarch_i386 -mmacosx-version-min=10.4
-  ARCH += -Xarch_i386 -isysroot$(XSDK)/MacOSX10.4u.sdk
-  ARCH += -Xarch_x86_64 -mmacosx-version-min=10.5
-  ARCH += -Xarch_x86_64 -isysroot$(XSDK)/MacOSX10.5.sdk
- else
-  ARCH = -arch i386 -arch ppc
-  ARCH += -mmacosx-version-min=10.4 -isysroot$(XSDK)/MacOSX10.4u.sdk
- endif
-else
- ARCH = -arch x86_64 -arch i386 -arch ppc
- ARCH += -Xarch_ppc -mmacosx-version-min=10.4
- ARCH += -Xarch_i386 -mmacosx-version-min=10.4
- ARCH += -Xarch_x86_64 -mmacosx-version-min=10.5
- ARCH += -isysroot$(XSDK)/MacOSX10.5.sdk
-endif
+ARCH = -arch x86_64 -arch i386
 
 COPTS += -include preinc.h -DCCTOOLSVER=$(CCTOOLSVER)
 
