@@ -77,7 +77,7 @@ struct arch_flag *arch_flag,
 void **pmod) /* maybe NULL */
 {
 
-   size_t bufsize;
+   uint32_t bufsize;
    char *p, *prefix, *lto_path, buf[MAXPATHLEN], resolved_name[PATH_MAX];
    int i;
    void *mod;
@@ -92,18 +92,11 @@ void **pmod) /* maybe NULL */
 	if(tried_to_load_lto == 0){
 	    tried_to_load_lto = 1;
 	    /*
-	     * The design is rather lame and inelegant: "llvm support is only
-	     * for stuff in /Developer and not the tools installed in /".
-	     * Which would mean tools like libtool(1) run from /usr/bin would
-	     * not work with lto, and work differently if the same binary was
-	     * installed in /Developer/usr/bin . And if the tools were
-	     * installed in some other location besides /Developer, like
-	     * /Developer/Platforms/...  that would also not work.
-	     *
-	     * So instead construct the prefix to this executable assuming it
-	     * is in a bin directory relative to a lib directory of the matching
-	     * lto library and first try to load that.  If not then fall back to
-	     * trying "/Developer/usr/lib/libLTO.dylib".
+	     * Construct the prefix to this executable assuming it is in a bin
+	     * directory relative to a lib directory of the matching lto library
+	     * and first try to load that.  If not then fall back to trying
+	     * "/Applications/Xcode.app/Contents/Developer/Toolchains/
+	     * XcodeDefault.xctoolchain/usr/lib/libLTO.dylib".
 	     */
 	    bufsize = MAXPATHLEN;
 	    p = buf;
@@ -122,7 +115,9 @@ void **pmod) /* maybe NULL */
 	    if(lto_handle == NULL){
 		free(lto_path);
 		lto_path = NULL;
-		lto_handle = dlopen("/Developer/usr/lib/libLTO.dylib",
+		lto_handle = dlopen("/Applications/Xcode.app/Contents/"
+				    "Developer/Toolchains/XcodeDefault."
+				    "xctoolchain/usr/lib/libLTO.dylib",
 				    RTLD_NOW);
 	    }
 	    if(lto_handle == NULL)
@@ -212,6 +207,10 @@ char *target_triple)
 	    arch_flag->cputype = CPU_TYPE_X86_64;
 	    arch_flag->cpusubtype = CPU_SUBTYPE_X86_64_ALL;
 	}
+	else if(strncmp(target_triple, "x86_64h", n) == 0){
+	    arch_flag->cputype = CPU_TYPE_X86_64;
+	    arch_flag->cpusubtype = CPU_SUBTYPE_X86_64_H;
+	}
 	else if(strncmp(target_triple, "powerpc", n) == 0){
 	    arch_flag->cputype = CPU_TYPE_POWERPC;
 	    arch_flag->cpusubtype = CPU_SUBTYPE_POWERPC_ALL;
@@ -236,6 +235,11 @@ char *target_triple)
 	    arch_flag->cputype = CPU_TYPE_ARM;
 	    arch_flag->cpusubtype = CPU_SUBTYPE_ARM_V6;
 	}
+	else if(strncmp(target_triple, "armv6m", n) == 0 ||
+	        strncmp(target_triple, "thumbv6m", n) == 0){
+	    arch_flag->cputype = CPU_TYPE_ARM;
+	    arch_flag->cpusubtype = CPU_SUBTYPE_ARM_V6M;
+	}
 	else if(strncmp(target_triple, "armv7", n) == 0 ||
 	        strncmp(target_triple, "thumbv7", n) == 0){
 	    arch_flag->cputype = CPU_TYPE_ARM;
@@ -246,10 +250,29 @@ char *target_triple)
 	    arch_flag->cputype = CPU_TYPE_ARM;
 	    arch_flag->cpusubtype = CPU_SUBTYPE_ARM_V7F;
 	}
+	else if(strncmp(target_triple, "armv7s", n) == 0 ||
+	        strncmp(target_triple, "thumbv7s", n) == 0){
+	    arch_flag->cputype = CPU_TYPE_ARM;
+	    arch_flag->cpusubtype = CPU_SUBTYPE_ARM_V7S;
+	}
 	else if(strncmp(target_triple, "armv7k", n) == 0 ||
 	        strncmp(target_triple, "thumbv7k", n) == 0){
 	    arch_flag->cputype = CPU_TYPE_ARM;
 	    arch_flag->cpusubtype = CPU_SUBTYPE_ARM_V7K;
+	}
+	else if(strncmp(target_triple, "armv7m", n) == 0 ||
+	        strncmp(target_triple, "thumbv7m", n) == 0){
+	    arch_flag->cputype = CPU_TYPE_ARM;
+	    arch_flag->cpusubtype = CPU_SUBTYPE_ARM_V7M;
+	}
+	else if(strncmp(target_triple, "armv7em", n) == 0 ||
+	        strncmp(target_triple, "thumbv7em", n) == 0){
+	    arch_flag->cputype = CPU_TYPE_ARM;
+	    arch_flag->cpusubtype = CPU_SUBTYPE_ARM_V7EM;
+	}
+	else if(strncmp(target_triple, "arm64", n) == 0){
+	    arch_flag->cputype = CPU_TYPE_ARM64;
+	    arch_flag->cpusubtype = CPU_SUBTYPE_ARM64_ALL;
 	}
 	else{
 	    return(0);

@@ -34,7 +34,6 @@ struct __darwin_i386_float_state;
 #define __uint32_t uint32_t
 #define __lr lr
 #define __pc pc
-#include "mach/arm/_structs.h"
 #undef __pc
 #undef __lr
 #undef __uint32_t

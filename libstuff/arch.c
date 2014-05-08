@@ -48,6 +48,8 @@ static const struct arch_flag arch_flags[] = {
     /* architecture families */
     { "ppc64",     CPU_TYPE_POWERPC64, CPU_SUBTYPE_POWERPC_ALL },
     { "x86_64",    CPU_TYPE_X86_64, CPU_SUBTYPE_X86_64_ALL },
+    { "x86_64h",   CPU_TYPE_X86_64, CPU_SUBTYPE_X86_64_H },
+    { "arm64",     CPU_TYPE_ARM64,     CPU_SUBTYPE_ARM64_ALL },
     /* specific architecture implementations */
     { "ppc970-64", CPU_TYPE_POWERPC64, CPU_SUBTYPE_POWERPC_970 },
 
@@ -94,9 +96,14 @@ static const struct arch_flag arch_flags[] = {
     { "armv5",  CPU_TYPE_ARM,     CPU_SUBTYPE_ARM_V5TEJ},
     { "xscale", CPU_TYPE_ARM,     CPU_SUBTYPE_ARM_XSCALE},
     { "armv6",  CPU_TYPE_ARM,     CPU_SUBTYPE_ARM_V6 },
+    { "armv6m", CPU_TYPE_ARM,     CPU_SUBTYPE_ARM_V6M },
     { "armv7",  CPU_TYPE_ARM,     CPU_SUBTYPE_ARM_V7 },
     { "armv7f", CPU_TYPE_ARM,     CPU_SUBTYPE_ARM_V7F },
+    { "armv7s", CPU_TYPE_ARM,     CPU_SUBTYPE_ARM_V7S },
     { "armv7k", CPU_TYPE_ARM,     CPU_SUBTYPE_ARM_V7K },
+    { "armv7m", CPU_TYPE_ARM,     CPU_SUBTYPE_ARM_V7M },
+    { "armv7em", CPU_TYPE_ARM,    CPU_SUBTYPE_ARM_V7EM },
+    { "arm64v8",CPU_TYPE_ARM64,   CPU_SUBTYPE_ARM64_V8 },
     { NULL,	0,		  0 }
 };
 
@@ -214,6 +221,7 @@ const struct arch_flag *flag)
         return BIG_ENDIAN_BYTE_SEX;
     else if(flag->cputype == CPU_TYPE_I386 ||
 	    flag->cputype == CPU_TYPE_X86_64 ||
+	    flag->cputype == CPU_TYPE_ARM64 ||
 	    flag->cputype == CPU_TYPE_ARM)
         return LITTLE_ENDIAN_BYTE_SEX;
     else

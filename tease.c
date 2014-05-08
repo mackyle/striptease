@@ -1272,8 +1272,8 @@ struct object *object)
 #endif /* !defined(NMEDIT) */
 
 #ifndef NMEDIT
-	if(sfile != NULL || Rfile != NULL || dfile != NULL || Aflag || aflag ||
-	   uflag || Sflag || xflag || Xflag || tflag || nflag || rflag || 
+	if(sfile != NULL || Rfile != NULL || dfile != NULL || Aflag || uflag ||
+	   Sflag || xflag || Xflag || nflag || rflag || aflag || tflag ||
 	   default_dyld_executable || object->mh_filetype == MH_DYLIB ||
 	   object->mh_filetype == MH_DYLINKER)
 #endif /* !defined(NMEDIT) */
@@ -1289,10 +1289,10 @@ struct object *object)
 		return;
 	    if(no_uuid == TRUE)
 		strip_LC_UUID_commands(arch, member, object);
-	    if(no_dylib || no_dylib_unused)
-		strip_LC_DYLIB_commands(arch, member, object);
 #endif /* !defined(NMEDIT) */
 	    /*
+	    if(no_dylib || no_dylib_unused)
+		strip_LC_DYLIB_commands(arch, member, object);
 	     * The parts that make up output_sym_info_size must be added up in
 	     * the output order so that when the sizes of things are rounded up
 	     * before parts that must be aligned the final output_sym_info_size
@@ -1413,6 +1413,17 @@ struct object *object)
 		    object->code_sign_drs_cmd->datasize;
 		object->output_sym_info_size +=
 		    object->code_sign_drs_cmd->datasize;
+	    }
+
+	    if(object->link_opt_hint_cmd != NULL){
+		object->output_link_opt_hint_info_data = object->object_addr +
+		    object->link_opt_hint_cmd->dataoff;
+		object->output_link_opt_hint_info_data_size = 
+		    object->link_opt_hint_cmd->datasize;
+		object->input_sym_info_size +=
+		    object->link_opt_hint_cmd->datasize;
+		object->output_sym_info_size +=
+		    object->link_opt_hint_cmd->datasize;
 	    }
 
 	    if(object->mh != NULL){
@@ -1660,6 +1671,11 @@ struct object *object)
 		if(object->code_sign_drs_cmd != NULL){
 		    object->code_sign_drs_cmd->dataoff = offset;
 		    offset += object->code_sign_drs_cmd->datasize;
+		}
+
+		if(object->link_opt_hint_cmd != NULL){
+		    object->link_opt_hint_cmd->dataoff = offset;
+		    offset += object->link_opt_hint_cmd->datasize;
 		}
 
 		if(object->st->nsyms != 0){
@@ -1915,6 +1931,8 @@ struct object *object)
 			      object->input_indirectsym_pad;
 		}
 	    }
+	    if(no_uuid == TRUE)
+		strip_LC_UUID_commands(arch, member, object);
 	}
 #endif /* !defined(NMEDIT) */
 
@@ -2191,6 +2209,18 @@ struct object *object)
 	       object->dyst->nlocrel != 0 &&
 	       object->dyst->locreloff < offset)
 		offset = object->dyst->locreloff;
+	    if(object->func_starts_info_cmd != NULL &&
+	       object->func_starts_info_cmd->datasize != 0 &&
+	       object->func_starts_info_cmd->dataoff < offset)
+	        offset = object->func_starts_info_cmd->dataoff;
+	    if(object->data_in_code_cmd != NULL &&
+	       object->data_in_code_cmd->datasize != 0 &&
+	       object->data_in_code_cmd->dataoff < offset)
+	        offset = object->data_in_code_cmd->dataoff;
+	    if(object->link_opt_hint_cmd != NULL &&
+	       object->link_opt_hint_cmd->datasize != 0 &&
+	       object->link_opt_hint_cmd->dataoff < offset)
+	        offset = object->link_opt_hint_cmd->dataoff;
 	    if(object->st->nsyms != 0 &&
 	       object->st->symoff < offset)
 		offset = object->st->symoff;
@@ -2615,10 +2645,7 @@ uint32_t nextrefsyms)
 	}
 
 	new_nsyms = 0;
-	if(object->mh != NULL)
-	    new_strsize = sizeof(int32_t);
-	else
-	    new_strsize = sizeof(int64_t);
+	new_strsize = sizeof(int32_t);
 	new_nlocalsym = 0;
 	new_nextdefsym = 0;
 	new_nundefsym = 0;
@@ -2626,7 +2653,10 @@ uint32_t nextrefsyms)
 
 	/*
 	 * If this an object file that has DWARF debugging sections to strip
-	 * then we have to run ld -r on it.
+	 * then we have to run ld -r on it.  We also have to do this for
+	 * ARM objects because thumb symbols can't be stripped as they are
+	 * needed for proper linking in .o files.  And we need to for i386
+	 * objects to not mess up compact unwind info.
 	 */
 	if(object->mh_filetype == MH_OBJECT && (Sflag || xflag)){
 	    has_dwarf = FALSE;
@@ -2662,7 +2692,14 @@ uint32_t nextrefsyms)
 		}
 		lc = (struct load_command *)((char *)lc + lc->cmdsize);
 	    }
-	    if(has_dwarf == TRUE)
+	    /*
+	     * If the file has dwarf symbols or is an ARM or i386 object then
+	     * have ld(1) do the "stripping" and make an ld -r version of the
+	     * object.
+	     */
+	    if(has_dwarf == TRUE ||
+	       object->mh_cputype == CPU_TYPE_ARM ||
+	       object->mh_cputype == CPU_TYPE_I386)
 		make_ld_r_object(arch, member, object);
 	}
 	/*
@@ -2733,7 +2770,7 @@ uint32_t nextrefsyms)
 		       strcmp((s + j)->segname, SEG_TEXT) == 0)
 			text_nsect = nsects + 1;
 		    sections[nsects++] = s++;
-		}
+	    }
 	    }
 	    else if(lc->cmd == LC_SEGMENT_64){
 		sg64 = (struct segment_command_64 *)lc;
@@ -2744,7 +2781,7 @@ uint32_t nextrefsyms)
 		       strcmp((s64 + j)->segname, SEG_TEXT) == 0)
 			text_nsect = nsects + 1;
 		    sections64[nsects++] = s64++;
-		}
+	    }
 	    }
 	    lc = (struct load_command *)((char *)lc + lc->cmdsize);
 	}
@@ -2800,6 +2837,10 @@ uint32_t nextrefsyms)
 		}
 	    }
 	    if((n_type & N_EXT) == 0){ /* local symbol */
+		/*
+		 * For x86_64, i386 .o or ARM files we have run ld -r on them
+		 * we keeping all resulting symbols.
+		 */
 		if(aflag){
 		    if(n_strx != 0)
 			new_strsize += strlen(strings + n_strx) + 1;
@@ -2807,13 +2848,11 @@ uint32_t nextrefsyms)
 		    new_nsyms++;
 		    saves[i] = new_nsyms;
 		}
-		/*
-		 * For x86_64 .o files we have run ld -r on them and are stuck
-		 * keeping all resulting symbols.
-		 */
-		else if(object->mh == NULL && (
-		   object->mh64->cputype == CPU_TYPE_X86_64) &&
-		   object->mh64->filetype == MH_OBJECT){
+		else if((object->mh_cputype == CPU_TYPE_X86_64 ||
+		    object->mh_cputype == CPU_TYPE_I386 ||
+                    object->mh_cputype == CPU_TYPE_ARM64 ||
+		    object->mh_cputype == CPU_TYPE_ARM) &&
+		   object->mh_filetype == MH_OBJECT){
 		    if(n_strx != 0)
 			new_strsize += strlen(strings + n_strx) + 1;
 		    new_nlocalsym++;
@@ -3163,13 +3202,16 @@ uint32_t nextrefsyms)
 		    saves[i] = new_nsyms;
 		}
 		/*
-		 * For x86_64 .o files we have run ld -r on them and are stuck
-		 * keeping all resulting symbols.
+		 * For x86_64 and i386 .o files we have run ld -r on them and
+		 * are stuck keeping all resulting symbols.
 		 */
 		if(saves[i] == 0 &&
-		   object->mh == NULL && 
-		   object->mh64->cputype == CPU_TYPE_X86_64 &&
-		   object->mh64->filetype == MH_OBJECT){
+		   ((object->mh == NULL && 
+		     object->mh64->cputype == CPU_TYPE_X86_64 &&
+		     object->mh64->filetype == MH_OBJECT) ||
+		    (object->mh64 == NULL && 
+		     object->mh->cputype == CPU_TYPE_I386 &&
+		     object->mh->filetype == MH_OBJECT))){
 		    len = strlen(strings + n_strx) + 1;
 		    new_strsize += len;
 		    new_ext_strsize += len;
@@ -4196,6 +4238,10 @@ struct object *object)
 		object->code_sign_drs_cmd =
 				         (struct linkedit_data_command *)lc1;
 		break;
+	    case LC_LINKER_OPTIMIZATION_HINT:
+		object->link_opt_hint_cmd =
+				         (struct linkedit_data_command *)lc1;
+		break;
 	    case LC_CODE_SIGNATURE:
 		object->code_sig_cmd = (struct linkedit_data_command *)lc1;
 		break;
@@ -4528,6 +4574,10 @@ struct object *object)
 		object->code_sign_drs_cmd =
 				         (struct linkedit_data_command *)lc1;
 		break;
+	    case LC_LINKER_OPTIMIZATION_HINT:
+		object->link_opt_hint_cmd =
+				         (struct linkedit_data_command *)lc1;
+		break;
 	    case LC_DYLD_INFO_ONLY:
 	    case LC_DYLD_INFO:
 		object->dyld_info = (struct dyld_info_command *)lc1;
@@ -4536,35 +4586,34 @@ struct object *object)
 	}
 
 	if(cflag){
-	    /*
-	     * To get the right amount of the file copied out by writeout() for
-	     * the case when we are stripping out the section contents we
-	     * already reduce the object size by the size of the section
-	     * contents including the padding after the load commands.  So here
-	     * we need to further reduce it by the load command for the
-	     * LC_CODE_SIGNATURE (a struct linkedit_data_command) we are
-	     * removing.
-	     */
-	    object->object_size -= sizeof(struct linkedit_data_command);
-	    /*
-	     * Then this size minus the size of the input symbolic information
-	     * is what is copied out from the file by writeout().  Which in this
-	     * case is just the new headers.
-	     */
+	/*
+	 * To get the right amount of the file copied out by writeout() for the
+	 * case when we are stripping out the section contents we already reduce
+	 * the object size by the size of the section contents including the
+	 * padding after the load commands.  So here we need to further reduce
+	 * it by the load command for the LC_CODE_SIGNATURE (a struct
+	 * linkedit_data_command) we are removing.
+	 */
+	object->object_size -= sizeof(struct linkedit_data_command);
+	/*
+ 	 * Then this size minus the size of the input symbolic information is
+	 * what is copied out from the file by writeout().  Which in this case
+	 * is just the new headers.
+	 */
 
-	    /*
-	     * Finally for -c the file offset to the link edit information is to
-	     * be right after the load commands.  So reset this for the updated
-	     * size of the load commands without the LC_CODE_SIGNATURE.
-	     */
-	    if(object->mh != NULL)
-		object->seg_linkedit->fileoff = sizeof(struct mach_header) +
-						sizeofcmds;
-	    else
-		object->seg_linkedit64->fileoff =
-			sizeof(struct mach_header_64) + sizeofcmds;
-	}
+	/*
+	 * Finally for -c the file offset to the link edit information is to be
+	 * right after the load commands.  So reset this for the updated size
+	 * of the load commands without the LC_CODE_SIGNATURE.
+	 */
+	if(object->mh != NULL)
+	    object->seg_linkedit->fileoff = sizeof(struct mach_header) +
+					    sizeofcmds;
+	else
+	    object->seg_linkedit64->fileoff = sizeof(struct mach_header_64) +
+					    sizeofcmds;
 }
+	}
 #endif /* !(NMEDIT) */
 
 /*
