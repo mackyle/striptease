@@ -50,10 +50,6 @@
 #include <mach/i386/thread_status.h>
 #include <mach/hppa/thread_status.h>
 #include <mach/sparc/thread_status.h>
-#undef MACHINE_THREAD_STATE	/* need to undef these to avoid warnings */
-#undef MACHINE_THREAD_STATE_COUNT
-#undef THREAD_STATE_NONE
-#undef VALID_THREAD_STATE_FLAVOR
 #include <mach/arm/thread_status.h>
 #include <mach-o/nlist.h>
 #include <mach-o/reloc.h>
@@ -311,6 +307,10 @@ __private_extern__ void swap_arm_thread_state_t(
     arm_thread_state_t *cpu,
     enum byte_sex target_byte_sex);
 
+__private_extern__ void swap_arm_thread_state64_t(
+    arm_thread_state64_t *cpu,
+    enum byte_sex target_byte_sex);
+
 __private_extern__ void swap_ident_command(
     struct ident_command *id_cmd,
     enum byte_sex target_byte_sex);
@@ -349,6 +349,14 @@ __private_extern__ void swap_rpath_command(
 
 __private_extern__ void swap_encryption_command(
     struct encryption_info_command *ec,
+    enum byte_sex target_byte_sex);
+
+__private_extern__ void swap_encryption_command_64(
+    struct encryption_info_command_64 *ec,
+    enum byte_sex target_byte_sex);
+
+__private_extern__ void swap_linker_option_command(
+    struct linker_option_command *lo,
     enum byte_sex target_byte_sex);
 
 __private_extern__ void swap_dyld_info_command(
@@ -411,6 +419,11 @@ __private_extern__ void swap_dylib_table_of_contents(
 __private_extern__ void swap_twolevel_hint(
     struct twolevel_hint *hints,
     uint32_t nhints,
+    enum byte_sex target_byte_sex);
+
+__private_extern__ void swap_data_in_code_entry(
+    struct data_in_code_entry *dices,
+    uint32_t ndices,
     enum byte_sex target_byte_sex);
 
 /*

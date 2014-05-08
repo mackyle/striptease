@@ -1,3 +1,4 @@
+#
 # Makefile for striptease project
 # Copyright (C) 2011,2012 Kyle J. McKay.  All rights reserved.
 #
@@ -23,7 +24,117 @@
 # dealings in this Software without prior written authorization from the
 # author(s).
 
-include version.mak
+# Makefile for striptease project
+# Copyright (C) 2011,2012 Kyle J. McKay.  All rights reserved.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to
+# deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+# sell copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# X CONSORTIUM BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
+# AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+# CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+#
+# Except as contained in this notice, the name of the author(s) shall not
+# be used in advertising or otherwise to promote the sale, use or other
+# dealings in this Software without prior written authorization from the
+# author(s).
+
+# The cctools version suffix these sources are based on
+# The tarball can be found at:
+# http://opensource.apple.com/tarballs/cctools/cctools-$(CCTOOLSVER).tar.gz
+
+CCTOOLSVER = 855
+
+ifneq (0,$$([(uname -r | cut -f1 -d.) -gt 9]; echo $$?)) # For old makefile.
+
+DEBUG ?= Release
+DD=build/$(DEBUG)/
+
+CC ?= cc
+CFLAGS += -O3 -fPIC -g0 -Wno-private-extern
+COPTS  += $(CFLAGS) -Iinclude -include preinc.h -DCCTOOLSVER=$(CCTOOLSVER)
+LDOPTS += -Wl,-dead_strip,-dead_strip_dylibs,-no_eh_labels
+LDOPTS += -Wl,-no_uuid,-no_version_load_command,-search_paths_first
+
+ifeq ($(DEBUG),Debug)
+ COPTS+=-O0 -g
+ LDOPTS=+-g
+else
+ LDOPTS+= -Wl,-S,-x,-w
+endif
+
+$(shell mkdir -p $(DD)/libstuff)
+
+all : $(DD)tease tools
+
+.PHONY : tools tease strip install_name_tool nm
+
+tools : strip install_name_tool nm tease
+
+tease : $(DD)tease
+strip : $(DD)strip
+install_name_tool : $(DD)install_name_tool
+nm : $(DD)nm
+
+LIBSTUFF_SRC := $(wildcard libstuff/*.c)
+
+TEASE_SRC =	tease.c $(LIBSTUFF_SRC)
+STRIP_SRC =	strip.c $(LIBSTUFF_SRC)
+INSTALL_NAME_TOOL_SRC =	install_name_tool.c $(LIBSTUFF_SRC)
+NM_SRC =	nm.c $(LIBSTUFF_SRC)
+
+TEASE_OBJS = $(addprefix $(DD),$(TEASE_SRC:.c=.o)) $(DD)version_tease.o
+STRIP_OBJS = $(addprefix $(DD),$(STRIP_SRC:.c=.o)) $(DD)version_strip.o
+
+INSTALL_NAME_TOOL_OBJS = $(addprefix $(DD),$(INSTALL_NAME_TOOL_SRC:.c=.o)) \
+	$(DD)version_install_name_tool.o
+
+NM_OBJS = $(addprefix $(DD),$(NM_SRC:.c=.o)) $(DD)nm.o
+
+$(DD)%.o : %.c
+	$(CC) -c $(COPTS) -o $@ $<
+
+$(DD)version_tease.o : version.c
+	$(CC) -c $(COPTS) -DPROGRAMNAME=tease -o $@ $<
+
+$(DD)version_strip.o : version.c
+	$(CC) -c $(COPTS) -DPROGRAMNAME=strip -o $@ $<
+
+$(DD)version_install_name_tool.o : version.c
+	$(CC) -c $(COPTS) -DPROGRAMNAME=install_name_tool -o $@ $<
+
+$(DD)version_nm.o : version.c
+	$(CC) -c $(COPTS) -DPROGRAMNAME=nm -o $@ $<
+
+$(DD)tease : $(TEASE_OBJS)
+	$(CC) -o $@ $(LDOPTS) $^
+
+$(DD)strip : $(STRIP_OBJS)
+	$(CC) -o $@ $(LDOPTS) $^
+
+$(DD)install_name_tool : $(INSTALL_NAME_TOOL_OBJS)
+	$(CC) -o $@ $(LDOPTS) $^
+
+$(DD)nm : $(NM_OBJS)
+	$(CC) -o $@ $(LDOPTS) $^
+
+clean :
+	rm -rf build
+
+
+#######################################
+else ##  ** Begin "Old" Makefile **  ##
+#######################################
 
 .PHONY : all clean
 
@@ -194,3 +305,5 @@ endif
 
 clean :
 	rm -rf build
+
+endif # "Old" makefile.
